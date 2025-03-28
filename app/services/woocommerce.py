@@ -214,6 +214,81 @@ class WooCommerceService:
         params = {k: v for k, v in params.items() if v is not None}
         logger.info(f"Fetching categories with params: {params}")
         return await self._request("GET", "products/categories", params=params)
+    
+    async def get_order(self, order_id: int) -> Optional[Dict]:
+        """Получает детальную информацию о заказе по ID."""
+        logger.info(f"Fetching order with ID: {order_id}")
+        try:
+            data, _ = await self._request("GET", f"orders/{order_id}")
+            if isinstance(data, dict):
+                return data
+            else:
+                logger.error(f"Unexpected data type received from WC for order {order_id}: {type(data)}")
+                return None
+        except WooCommerceServiceError as e:
+             logger.warning(f"Error fetching order {order_id} from WC: {e}")
+             if e.status_code == 404: return None
+             raise e
+        except Exception as e:
+             logger.exception(f"Unexpected error in get_order for ID {order_id}: {e}")
+             raise WooCommerceServiceError(f"Непредвиденная ошибка при получении заказа {order_id}") from e
+
+    # --- НОВЫЙ Метод get_orders (получение списка заказов) ---
+    async def get_orders(
+        self,
+        page: int = 1,
+        per_page: int = 10,
+        status: Optional[Union[str, List[str]]] = None, # Статус или список статусов
+        customer_id: Optional[int] = None, # Для поиска по ID клиента WP (не TG ID)
+        search: Optional[str] = None, # Поиск по номеру, email и т.д.
+        orderby: str = 'date',
+        order: str = 'desc',
+        **kwargs
+    ) -> Tuple[Optional[List[Dict]], Optional[httpx.Headers]]:
+        """Получает список заказов из WooCommerce."""
+        params = {
+            'page': page,
+            'per_page': per_page,
+            'orderby': orderby,
+            'order': order,
+            'customer': customer_id,
+            'search': search,
+            **kwargs # Доп. параметры, если нужны (например, dates)
+        }
+        # Обработка статуса (может быть строкой 'any' или списком)
+        if isinstance(status, list):
+            params['status'] = ','.join(status) # WC принимает статусы через запятую
+        elif isinstance(status, str) and status != 'any': # 'any' - по умолчанию, если None
+             params['status'] = status
+
+        params = {k: v for k, v in params.items() if v is not None}
+        logger.info(f"Fetching orders with params: {params}")
+        # Возвращаем данные и заголовки для пагинации
+        return await self._request("GET", "orders", params=params)
+
+    # --- НОВЫЙ Метод update_order_status ---
+    async def update_order_status(self, order_id: int, new_status: str) -> Optional[Dict]:
+        """Обновляет статус заказа в WooCommerce."""
+        payload = {"status": new_status}
+        logger.info(f"Attempting to update status for order ID {order_id} to '{new_status}'")
+        try:
+            # Используем PUT или POST, WC API v3 поддерживает PUT для обновления
+            # Возвращаем только данные обновленного заказа
+            updated_order_data, _ = await self._request("PUT", f"orders/{order_id}", json_data=payload)
+
+            if updated_order_data and isinstance(updated_order_data, dict):
+                 logger.info(f"Order ID {order_id} status updated successfully to '{new_status}'")
+                 return updated_order_data
+            else:
+                 logger.error(f"Failed to update order status for {order_id}. Received unexpected response: {updated_order_data}")
+                 raise WooCommerceServiceError(f"Не удалось обновить статус заказа {order_id} или получен некорректный ответ")
+        except WooCommerceServiceError as e:
+            logger.error(f"WooCommerce service error updating order status for {order_id}: {e}", exc_info=True)
+            raise # Перебрасываем ошибку
+        except Exception as e:
+             logger.exception(f"Unexpected error in update_order_status for ID {order_id}: {e}")
+             raise WooCommerceServiceError(f"Непредвиденная ошибка при обновлении статуса заказа {order_id}") from e
+
 
     # --- Метод для создания заказа ---
 

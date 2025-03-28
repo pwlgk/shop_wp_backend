@@ -23,6 +23,8 @@ class Settings(BaseSettings):
     TELEGRAM_MANAGER_IDS_STR: str
     MINI_APP_URL: str
 
+    ADMIN_API_KEY: Optional[str] = None
+    
     # --- Webhook Settings ---
     WEBHOOK_HOST: Optional[str] = None
     WEBHOOK_PATH: Optional[str] = None

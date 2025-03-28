@@ -135,3 +135,46 @@ class TelegramService:
         # Можно выбросить исключение, если ни одно уведомление не было отправлено
         # if success_count == 0:
         #     raise TelegramNotificationError("Failed to send notification to any manager.")
+    
+    def _format_status_update_for_customer(self, order_number: str, new_status: str) -> str:
+        """Форматирует сообщение об обновлении статуса для клиента."""
+        status_map = {
+            'on-hold': 'В ожидании подтверждения',
+            'processing': 'В обработке',
+            'completed': 'Выполнен (Доставлен)',
+            'cancelled': 'Отменен',
+            'refunded': 'Возвращен',
+            'failed': 'Не удался',
+            # Добавьте другие статусы WooCommerce по необходимости
+        }
+        status_text = status_map.get(new_status, new_status.capitalize()) # Используем понятный текст или сам статус
+
+        message = (
+            f"ℹ️ Статус вашего заказа №{hcode(order_number)} обновлен.\n\n"
+            f"Новый статус: {hbold(status_text)}"
+        )
+        # Можно добавить детали или ссылку на /myorders
+        # message += "\n\nВы можете проверить детали командой /myorders"
+        return message
+
+    async def notify_customer_status_update(
+            self,
+            customer_tg_id: int,
+            order_id: int, # ID заказа для логов
+            order_number: str, # Номер заказа для сообщения
+            new_status: str
+        ):
+        """Отправляет уведомление клиенту об изменении статуса заказа."""
+        if not customer_tg_id:
+            logger.error(f"Cannot notify customer for order {order_id}: customer_tg_id is missing.")
+            return
+
+        message_text = self._format_status_update_for_customer(order_number, new_status)
+        logger.info(f"Sending status update notification for order {order_id} to customer {customer_tg_id}...")
+
+        if await self._send_message_safe(customer_tg_id, message_text):
+            logger.info(f"Status update notification sent successfully to customer {customer_tg_id}.")
+        else:
+            # Ошибка уже залогирована в _send_message_safe
+            logger.warning(f"Failed to send status update notification to customer {customer_tg_id}.")
+            # Можно добавить доп. логику, если нужно (например, уведомить менеджера о несработавшем уведомлении)

@@ -2,6 +2,7 @@
 from fastapi import APIRouter
 # Импортируем все роутеры эндпоинтов
 from app.api.v1.endpoints import products, orders, categories # Добавляем categories
+from app.api.v1.endpoints import admin_orders
 
 api_router_v1 = APIRouter()
 
@@ -10,3 +11,4 @@ api_router_v1.include_router(products.router, prefix="/products", tags=["Product
 api_router_v1.include_router(orders.router, prefix="/orders", tags=["Orders"])
 # >>>>> ДОБАВЛЯЕМ ПОДКЛЮЧЕНИЕ РОУТЕРА КАТЕГОРИЙ <<<<<
 api_router_v1.include_router(categories.router, prefix="/categories", tags=["Categories"])
+api_router_v1.include_router(admin_orders.router)

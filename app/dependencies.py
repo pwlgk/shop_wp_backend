@@ -1,6 +1,8 @@
 # backend/app/dependencies.py
 from datetime import datetime, timezone
-from fastapi import Request, HTTPException, status, Depends, Header
+import hmac
+from fastapi import Request, HTTPException, logger, status, Depends, Header, Security
+from fastapi.security import APIKeyHeader
 from typing import Annotated, Dict, Optional
 from aiogram import Bot, Dispatcher
 from app.services.woocommerce import WooCommerceService, WooCommerceServiceError
@@ -8,6 +10,29 @@ from app.services.telegram import TelegramService, TelegramNotificationError
 from app.utils.telegram_auth import validate_init_data, TelegramAuthError # Импортируем
 from app.core.config import settings
 
+# Определяем схему для заголовка X-Admin-API-Key
+api_key_header_admin = APIKeyHeader(name="X-Admin-API-Key", auto_error=False)
+
+async def verify_admin_api_key(api_key: str = Security(api_key_header_admin)):
+    """
+    Зависимость для проверки секретного ключа доступа к админским API.
+    Сравнивает значение из заголовка X-Admin-API-Key с ключом из настроек.
+    """
+    if not settings.ADMIN_API_KEY:
+        # Если ключ не настроен на сервере, блокируем доступ к админке
+        logger.critical("Admin API Key is not configured on the server!")
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Функция администратора временно недоступна."
+        )
+    if not api_key or not hmac.compare_digest(api_key, settings.ADMIN_API_KEY):
+        logger.warning("Invalid or missing Admin API Key received.")
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Недействительный или отсутствующий ключ API администратора."
+        )
+    logger.debug("Admin API Key verified successfully.")
+    return True 
 
 async def get_woocommerce_service(request: Request) -> WooCommerceService:
     service = getattr(request.app.state, 'woocommerce_service', None)

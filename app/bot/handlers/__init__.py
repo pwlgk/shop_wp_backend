@@ -4,8 +4,9 @@ import logging
 
 # Импортируем роутеры из других модулей
 from .user import user_router
-# from .admin import admin_router # Если будут команды для админов
-# from .other import other_router # И т.д.
+
+# >>>>> ИМПОРТИРУЕМ РОУТЕР МЕНЕДЖЕРА <<<<<
+from .manager import manager_router
 
 logger = logging.getLogger(__name__)
 
@@ -18,8 +19,7 @@ def register_handlers(dp: Dispatcher):
 
     # Подключаем дочерние роутеры к главному роутеру
     main_router.include_router(user_router)
-    # main_router.include_router(admin_router) # << Пример для будущего
-    # main_router.include_router(other_router) # << Пример для будущего
+    main_router.include_router(manager_router)
 
     # >>>>> ИЗМЕНЕНИЕ ЗДЕСЬ: Регистрируем ТОЛЬКО главный роутер в диспетчере <<<<<
     dp.include_router(main_router)
