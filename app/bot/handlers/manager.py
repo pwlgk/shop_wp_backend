@@ -1,7 +1,7 @@
 # backend/app/bot/handlers/manager.py
 import json
 import logging
-from typing import Dict, Optional, Union
+from typing import Any, Dict, Optional, Tuple, Union
 import httpx # Для отправки запросов к API бэкенда
 from aiogram import Router, types, F
 from aiogram.filters import Command

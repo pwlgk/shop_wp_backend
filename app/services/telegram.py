@@ -1,4 +1,5 @@
 # backend/app/services/telegram.py
+from datetime import datetime
 import logging
 from typing import List, Dict, Optional, Any
 from aiogram import Bot
