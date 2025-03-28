@@ -31,7 +31,7 @@ async def verify_admin_api_key(api_key: str = Security(api_key_header_admin)):
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Недействительный или отсутствующий ключ API администратора."
         )
-    logger.debug("Admin API Key verified successfully.")
+    #logger.debug("Admin API Key verified successfully.")
     return True 
 
 async def get_woocommerce_service(request: Request) -> WooCommerceService:

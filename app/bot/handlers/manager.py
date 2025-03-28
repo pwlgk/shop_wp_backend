@@ -33,9 +33,9 @@ async def api_request(method: str, endpoint: str, params: Optional[Dict] = None,
 
     async with httpx.AsyncClient() as client:
         try:
-            logger.debug(f"Bot making API request: {method} {full_url} | Params: {params} | JSON: {json_data}")
+            #logger.debug(f"Bot making API request: {method} {full_url} | Params: {params} | JSON: {json_data}")
             response = await client.request(method, full_url, params=params, json=json_data, headers=headers, timeout=20.0)
-            logger.debug(f"Bot received API response: {response.status_code}")
+            #logger.debug(f"Bot received API response: {response.status_code}")
             response.raise_for_status() # Вызовет исключение для 4xx/5xx
             # Для успешных запросов без тела (редко)
             if response.status_code == 204:
